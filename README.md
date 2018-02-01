@@ -10,13 +10,19 @@ You can interact with the launcher by downloading the Sports for YouTube app her
 # Implementation
 Pass along a touchpoint (where the user taps) from your object/view to the VideoLauncher.Swift file. The following explains how to do so...
 
-Add a touchGesture to your object/view, create the touchpoint, and pass along the through a closure:
+Inside your object/view, create a closure where you will pass the touchPoint and any other info you want to include:
 ```
 var videoPressed : ((_ touchPoint: CGPoint) -> Void)?
+```
 
+Add a tapGesture to your object/view:
+```
 let tapGesture = UITapGestureRecognizer(target: self, action: #selector(YouTubeVideoLargeCell.handleTopicTapGesture(_:)))
 videoImageView.addGestureRecognizer(tapGesture)
+```
 
+Create the touchPoint inside the function connected to the tapGesture and pass along through the closure.
+```
 @objc func handleTopicTapGesture(_ sender: UITapGestureRecognizer) {
     //get touchPoint so we can animate view from here
     var touchPoint = sender.location(in: self)
@@ -33,7 +39,8 @@ videoImageView.addGestureRecognizer(tapGesture)
     }
 }
 ```
-Retreive the tap by completing the closure function in another view/controller:
+
+Retreive the tap by completing the closure function in another view/controller...make sure to avoid possible reference cycles by including a [weak self]:
 ```
 youtubeVideoLargeView.videoPressed = {[weak self] selectedVideos, touchPoint, thumbnailImage in
     if self != nil {
@@ -46,6 +53,6 @@ youtubeVideoLargeView.videoPressed = {[weak self] selectedVideos, touchPoint, th
     }
 }
 ```
+
 # Info
 This project references an object called BBPost. The BBPost object is a custom class that is not included with this project. It contains several properties used by the Video Launcher including the youtube link, title, and creatorName. You are encouraged to replace this object with your own custom class.
-
