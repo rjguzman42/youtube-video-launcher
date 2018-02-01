@@ -1,7 +1,11 @@
 # youtube-video-launcher
 
 # Usage
-This project is intended as an add-on to your existing project. It contains mostly UIView Swift files that are built entirely through code (not storyboard). You can interact with the launcher by downloading the Sports for YouTube app here -> http://appstore.com/sportsforyoutube
+This project is intended as an add-on to your existing project. It contains mostly UIView Swift files that are built entirely through code (not storyboard). The view will animate from a touchpoint (typically an image thumbnail) to fullscreen where the user is presented a custom view with video playback to control the YouTube iOS Player Helper. 
+
+You can find the helper here -> https://developers.google.com/youtube/v3/guides/ios_youtube_helper
+
+You can interact with the launcher by downloading the Sports for YouTube app here -> http://appstore.com/sportsforyoutube
 
 # Implementation
 Pass along a touchpoint (where the user taps) from your object/view to the VideoLauncher.Swift file. The following explains how to do so...
