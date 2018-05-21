@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ShareView: BaseUIView, UICollectionViewDelegate, UICollectionViewDataSource {
+class ShareView: BaseUIView, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     let titleLabel: UILabel = {
         let label = UILabel()
@@ -116,7 +116,7 @@ class ShareView: BaseUIView, UICollectionViewDelegate, UICollectionViewDataSourc
         return optionsToShare.count
     }
     
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAtIndexPath indexPath: NSIndexPath) -> CGSize {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let size = CGSize(width: 100, height: 100)
         return size
     }

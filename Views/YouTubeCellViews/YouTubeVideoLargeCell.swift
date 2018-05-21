@@ -16,6 +16,8 @@ class YouTubeVideoLargeCell: UICollectionViewCell {
         iv.contentMode = .scaleAspectFill
         iv.backgroundColor = .black
         iv.isUserInteractionEnabled = true
+        iv.layer.cornerRadius = 5
+        iv.clipsToBounds = true
         iv.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: (UIScreen.main.bounds.size.width * 9 / 16))
         return iv
     }()
@@ -35,7 +37,8 @@ class YouTubeVideoLargeCell: UICollectionViewCell {
         label.lineBreakMode = .byWordWrapping
         return label
     }()
-    var videoPressed : ((_ touchPoint: CGPoint) -> Void)?
+    
+    var videoPressed : ((_ touchPoint: CGPoint, _ videoImageView: UIImageView) -> Void)?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -54,12 +57,14 @@ class YouTubeVideoLargeCell: UICollectionViewCell {
     
     func setupUI() {
         addSubview(videoImageView)
-        addSubview(videoTitle)
-        addSubview(videoCreator)
         addConstraintsWithFormat(format: "H:|[v0]|", views: videoImageView)
         addConstraintsWithFormat(format: "V:|[v0]|", views: videoImageView)
+        
+        addSubview(videoTitle)
         addConstraintsWithFormat(format: "H:|-10-[v0]-10-|", views: videoTitle)
         addConstraint(NSLayoutConstraint(item: videoTitle, attribute: .bottom, relatedBy: .equal, toItem: videoImageView, attribute: .bottom, multiplier: 1, constant: -10))
+        
+        addSubview(videoCreator)
         addConstraintsWithFormat(format: "H:|-10-[v0]|", views: videoCreator)
         addConstraint(NSLayoutConstraint(item: videoCreator, attribute: .bottom, relatedBy: .equal, toItem: videoTitle, attribute: .top, multiplier: 1, constant: -5))
         
@@ -76,7 +81,7 @@ class YouTubeVideoLargeCell: UICollectionViewCell {
         videoImageView.addGestureRecognizer(tapGesture)
     }
     
-    func handleTopicTapGesture(_ sender: UITapGestureRecognizer) {
+    @objc func handleTopicTapGesture(_ sender: UITapGestureRecognizer) {
         let appDelegate = UIApplication.shared.delegate as! AppDelegate
         appDelegate.logActionEventWithName("button_press", value: "youtubeVideo")
         
@@ -91,7 +96,7 @@ class YouTubeVideoLargeCell: UICollectionViewCell {
         }
         
         if self.videoPressed != nil {
-            self.videoPressed!(touchPoint)
+            self.videoPressed!(touchPoint, videoImageView)
         }
     }
 }

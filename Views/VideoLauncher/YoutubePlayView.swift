@@ -44,6 +44,7 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         let button = UIButton()
         button.setImage(UIImage(named: "ic_expand"), for: .normal)
         button.isUserInteractionEnabled = true
+        button.imageEdgeInsets = UIEdgeInsets(top: 3, left: 3, bottom: 3, right: 3)
         button.contentEdgeInsets = UIEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
         return button
     }()
@@ -144,6 +145,11 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         view.isUserInteractionEnabled = true
         return view
     }()
+    let middleControlsView: UIView = {
+        let view = UIView()
+        view.isUserInteractionEnabled = true
+        return view
+    }()
     let bottomControlsView: UIView = {
         let view = UIView()
         view.isUserInteractionEnabled = true
@@ -153,25 +159,17 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         let button = UIButton()
         button.setImage(UIImage(named: "ic_play"), for: .normal)
         button.isUserInteractionEnabled = true
-        button.contentEdgeInsets = UIEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
+        button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         return button
     }()
     let forwardView: SkipRewindView = {
         let view = SkipRewindView()
         view.mainImage.image = UIImage(named: "ic_forward")
-        let defaults = UserDefaults.standard
-        if let forward = defaults.string(forKey: "skipForward") {
-            view.countLabel.text = forward
-        }
         return view
     }()
     let rewindView: SkipRewindView = {
         let view = SkipRewindView()
         view.mainImage.image = UIImage(named: "ic_rewind")
-        let defaults = UserDefaults.standard
-        if let back = defaults.string(forKey: "skipBack") {
-            view.countLabel.text = back
-        }
         return view
     }()
     let videoDurationLabel: UILabel = {
@@ -183,11 +181,18 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         return label
     }()
     let videoSlider: UISlider = {
+        let circleView = YouTubeSliderThumbView(frame: CGRect(x: 0, y: 0, width: 16, height: 16))
+        let circleViewHighlighted = YouTubeSliderThumbView(frame: CGRect(x: 0, y: 0, width: 20, height: 20))
+        
+        let circleImage = UIImage(view: circleView)
+        let circleImageHighlighted = UIImage(view: circleViewHighlighted)
         let slider = UISlider()
         slider.minimumTrackTintColor = BBTheme.Colors.generalPrimaryOrange.color
         slider.maximumTrackTintColor = UIColor.white.withAlphaComponent(0.5)
         slider.thumbTintColor = BBTheme.Colors.generalPrimaryOrange.color
         slider.addTarget(self, action: #selector(handlesSliderChange), for: .valueChanged)
+        slider.setThumbImage(circleImage, for: .normal)
+        slider.setThumbImage(circleImageHighlighted, for: .highlighted)
         return slider
     }()
     let forwardBackgroundView: UIView = {
@@ -206,20 +211,12 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         let view = SkipRewindBackgroundView()
         view.isHidden = true
         view.setImages(UIImage(named: "ic_play_forward")!)
-        let defaults = UserDefaults.standard
-        if let forward = defaults.string(forKey: "skipForward") {
-            view.countLabel.text = "\(forward) seconds"
-        }
         return view
     }()
     let rewindBackgroundImage: SkipRewindBackgroundView = {
         let view = SkipRewindBackgroundView()
         view.isHidden = true
         view.setImages(UIImage(named: "ic_play_rewind")!)
-        let defaults = UserDefaults.standard
-        if let back = defaults.string(forKey: "skipBack") {
-            view.countLabel.text = "\(back) seconds"
-        }
         return view
     }()
     let darkView: UIView = {
@@ -278,6 +275,19 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         //automatic setup
         AppUtility.setOrientation(orientation: "portrait")
         UIApplication.shared.isStatusBarHidden = true
+        setupDefaults()
+    }
+    
+    func setupDefaults() {
+        if let forward = persistencyManager.getSkipForward() {
+            forwardView.countLabel.text = forward
+            forwardBackgroundImage.countLabel.text = "\(forward) seconds"
+        }
+        
+        if let back = persistencyManager.getSkipBack() {
+            rewindView.countLabel.text = back
+            rewindBackgroundImage.countLabel.text = "\(back) seconds"
+        }
     }
     
     func initialSetup() {
@@ -313,40 +323,51 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         addConstraintsWithFormat(format: "H:|[v0]|", views: topControlsView)
         addConstraintsWithFormat(format: "V:|[v0(60)]", views: topControlsView)
         
+        controlsSuperView.addSubview(middleControlsView)
+        addConstraintsWithFormat(format: "H:|[v0]|", views: middleControlsView)
+        addConstraintsWithFormat(format: "V:[v0(120)]", views: middleControlsView)
+        addConstraint(NSLayoutConstraint(item: middleControlsView, attribute: .centerY, relatedBy: .equal, toItem: controlsSuperView, attribute: .centerY, multiplier: 1, constant: 0))
+        
         controlsSuperView.addSubview(bottomControlsView)
         addConstraintsWithFormat(format: "H:|[v0]|", views: bottomControlsView)
-        addConstraintsWithFormat(format: "V:[v0(60)]|", views: bottomControlsView)
+        addConstraintsWithFormat(format: "V:[v0(40)]|", views: bottomControlsView)
 
         topControlsView.addSubview(minimizeButton)
         addConstraintsWithFormat(format: "H:|-5-[v0]", views: minimizeButton)
         addConstraint(NSLayoutConstraint(item: minimizeButton, attribute: .centerY, relatedBy: .equal, toItem: topControlsView, attribute: .centerY, multiplier: 1, constant: 0))
         
-        topControlsView.addSubview(expandContractButton)
+        bottomControlsView.addSubview(expandContractButton)
         addConstraintsWithFormat(format: "H:[v0]-10-|", views: expandContractButton)
-        addConstraint(NSLayoutConstraint(item: expandContractButton, attribute: .centerY, relatedBy: .equal, toItem: topControlsView, attribute: .centerY, multiplier: 1, constant: 0))
+        addConstraint(NSLayoutConstraint(item: expandContractButton, attribute: .centerY, relatedBy: .equal, toItem: bottomControlsView, attribute: .centerY, multiplier: 1, constant: 0))
         
         topControlsView.addSubview(nextVideoLabel)
         addConstraintsWithFormat(format: "H:[v0]-15-|", views: nextVideoLabel)
         addConstraint(NSLayoutConstraint(item: nextVideoLabel, attribute: .centerY, relatedBy: .equal, toItem: topControlsView, attribute: .centerY, multiplier: 1, constant: 0))
         
-        bottomControlsView.addSubview(playPauseButton)
-        addConstraintsWithFormat(format: "H:|-5-[v0]", views: playPauseButton)
-        addConstraint(NSLayoutConstraint(item: playPauseButton, attribute: .centerY, relatedBy: .equal, toItem: bottomControlsView, attribute: .centerY, multiplier: 1, constant: 0))
+        middleControlsView.addSubview(playPauseButton)
+        playPauseButton.imageView?.contentMode = .scaleAspectFit
+        addConstraintsWithFormat(format: "H:[v0(45)]", views: playPauseButton)
+        addConstraintsWithFormat(format: "V:[v0(45)]", views: playPauseButton)
+        addConstraint(NSLayoutConstraint(item: playPauseButton, attribute: .centerX, relatedBy: .equal, toItem: middleControlsView, attribute: .centerX, multiplier: 1, constant: 0))
+        addConstraint(NSLayoutConstraint(item: playPauseButton, attribute: .centerY, relatedBy: .equal, toItem: middleControlsView, attribute: .centerY, multiplier: 1, constant: 0))
         
         bottomControlsView.addSubview(videoSlider)
-        addConstraintsWithFormat(format: "H:[v1]-25-[v0]", views: videoSlider, playPauseButton)
+        addConstraintsWithFormat(format: "H:|-10-[v0]", views: videoSlider)
+        addConstraintsWithFormat(format: "V:[v0]", views: videoSlider)
         addConstraint(NSLayoutConstraint(item: videoSlider, attribute: .centerY, relatedBy: .equal, toItem: bottomControlsView, attribute: .centerY, multiplier: 1, constant: 0))
         
-        bottomControlsView.addSubview(forwardView)
-        addConstraintsWithFormat(format: "H:[v0]-10-|", views: forwardView)
-        addConstraint(NSLayoutConstraint(item: forwardView, attribute: .centerY, relatedBy: .equal, toItem: bottomControlsView, attribute: .centerY, multiplier: 1, constant: 0))
+        middleControlsView.addSubview(forwardView)
+        addConstraintsWithFormat(format: "H:[v1]-35-[v0(30)]", views: forwardView, playPauseButton)
+        addConstraintsWithFormat(format: "V:[v0(30)]", views: forwardView)
+        addConstraint(NSLayoutConstraint(item: forwardView, attribute: .centerY, relatedBy: .equal, toItem: middleControlsView, attribute: .centerY, multiplier: 1, constant: 0))
         
-        bottomControlsView.addSubview(rewindView)
-        addConstraintsWithFormat(format: "H:[v0]-20-[v1]", views: rewindView, forwardView)
-        addConstraint(NSLayoutConstraint(item: rewindView, attribute: .centerY, relatedBy: .equal, toItem: bottomControlsView, attribute: .centerY, multiplier: 1, constant: 0))
+        middleControlsView.addSubview(rewindView)
+        addConstraintsWithFormat(format: "H:[v0(30)]-35-[v1]", views: rewindView, playPauseButton)
+        addConstraintsWithFormat(format: "V:[v0(30)]", views: rewindView)
+        addConstraint(NSLayoutConstraint(item: rewindView, attribute: .centerY, relatedBy: .equal, toItem: middleControlsView, attribute: .centerY, multiplier: 1, constant: 0))
         
         bottomControlsView.addSubview(videoDurationLabel)
-        addConstraintsWithFormat(format: "H:[v1]-25-[v0]-20-[v2]", views: videoDurationLabel, videoSlider, rewindView)
+        addConstraintsWithFormat(format: "H:[v1]-15-[v0]-10-[v2]", views: videoDurationLabel, videoSlider, expandContractButton)
         addConstraint(NSLayoutConstraint(item: videoDurationLabel, attribute: .centerY, relatedBy: .equal, toItem: bottomControlsView, attribute: .centerY, multiplier: 1, constant: 0))
         
         addSubview(videoTitleLabel)
@@ -765,11 +786,14 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
                 self.videoDarkFilterView.alpha = 0
                 self.topControlsView.alpha = 0
                 self.bottomControlsView.alpha = 0
+                self.middleControlsView.alpha = 0
              }, completion: { (true) in
                 self.videoDarkFilterView.isHidden = true
                 self.topControlsView.tag = 1
+                self.middleControlsView.isHidden = true
                 self.topControlsView.isHidden = true
                 self.bottomControlsView.isHidden = true
+                self.middleControlsView.alpha = 0
                 self.videoDarkFilterView.alpha = 1
                 self.topControlsView.alpha = 1
                 self.bottomControlsView.alpha = 1
@@ -777,10 +801,12 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         } else {
             UIView.animate(withDuration: 0.1, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 1, options: .curveEaseOut, animations: {
                 self.videoDarkFilterView.alpha = 1
+                self.middleControlsView.alpha = 1
                 self.topControlsView.alpha = 1
                 self.bottomControlsView.alpha = 1
             }, completion: { (true) in
                 self.videoDarkFilterView.isHidden = false
+                self.middleControlsView.isHidden = false
                 self.topControlsView.tag = 0
                 self.topControlsView.isHidden = false
                 self.bottomControlsView.isHidden = false
@@ -798,34 +824,43 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         if(hide) {
             self.videoDarkFilterView.isHidden = true
             self.topControlsView.tag = 1
+            self.middleControlsView.isHidden = true
             self.topControlsView.isHidden = true
             self.bottomControlsView.isHidden = true
             self.bottomChangeVideoControls.isHidden = true
             self.bottomBorderView.isHidden = true
             self.tableView.isHidden = true
+            self.moreOptionsView.isHidden = true
+            self.shareView.isHidden = true
+            self.backgroundColor = .black
         } else {
             self.videoDarkFilterView.isHidden = false
             self.topControlsView.tag = 0
             self.topControlsView.isHidden = false
+            self.middleControlsView.isHidden = false
             self.bottomControlsView.isHidden = false
             self.bottomChangeVideoControls.isHidden = false
             self.bottomBorderView.isHidden = false
             self.tableView.isHidden = false
+            self.moreOptionsView.isHidden = false
+            self.shareView.isHidden = false
+            self.backgroundColor = .white
         }
     }
     
     @objc func minimize() {
-        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 1, options: .curveEaseOut, animations: {
+        UIView.animate(withDuration: 0.7, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.0, options: .curveEaseInOut, animations: {
             UIApplication.shared.isStatusBarHidden = false
-            self.closingViews(hide: true)
-            self.youtubePlayer.translatesAutoresizingMaskIntoConstraints = false
-            self.youtubePlayer.bottomAnchor.constraint(equalTo: self.bottomAnchor).isActive = true
-            self.youtubePlayer.frame = self.frame
-            self.controlsSuperView.frame = CGRect(x: 0, y: 0, width: Int(self.youtubePlayer.frame.width), height: Int(self.youtubePlayer.frame.height))
-            self.videoDarkFilterView.subviews[0].frame = CGRect(x: 0, y: 0, width: self.youtubePlayer.frame.size.width + 100, height: self.youtubePlayer.frame.size.height + 100)
             if let keyWindow = UIApplication.shared.keyWindow {
                 self.frame = CGRect(x: keyWindow.frame.width - self.youtubePlayerMinWidth, y: keyWindow.frame.height - self.youtubePlayerMinHeight, width: self.youtubePlayerMinWidth, height: self.youtubePlayerMinHeight)
             }
+            
+            self.closingViews(hide: true)
+            self.youtubePlayer.translatesAutoresizingMaskIntoConstraints = false
+            self.youtubePlayer.bottomAnchor.constraint(equalTo: self.bottomAnchor).isActive = true
+            //self.youtubePlayer.frame = self.frame
+            self.controlsSuperView.frame = CGRect(x: 0, y: 0, width: Int(self.youtubePlayer.frame.width), height: Int(self.youtubePlayer.frame.height))
+            self.videoDarkFilterView.subviews[0].frame = CGRect(x: 0, y: 0, width: self.youtubePlayer.frame.size.width + 100, height: self.youtubePlayer.frame.size.height + 100)
             
             self.controlsSuperView.removeGestureRecognizer(self.controlsSuperViewTap)
             self.maximizeTap = UITapGestureRecognizer(target: self, action: #selector(YoutubePlayView.maximize(_:)))
@@ -837,11 +872,18 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
             self.currentDragPoint = self.center
         }, completion: { (true) in
             //do something
+            self.tableView.alpha = 1
+            self.videoTitleLabel.alpha = 1
+            self.bottomChangeVideoControls.alpha = 1
+            self.bottomBorderView.alpha = 1
+            self.shareView.alpha = 1
+            self.moreOptionsView.alpha = 1
+            self.backgroundColor = UIColor.white
         })
     }
     
     @objc func maximize(_ sender: Any) {
-        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 1, options: .curveEaseOut, animations: {
+        UIView.animate(withDuration: 0.7, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.0, options: .curveEaseInOut, animations: {
             UIApplication.shared.isStatusBarHidden = true
             if let keyWindow = UIApplication.shared.keyWindow {
                 self.frame = keyWindow.frame
@@ -1172,7 +1214,7 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
     }
     
     func storeWatchActivity(postid: String) {
-        BBApiClient.sharedApiClient.storeWatchedPostActivity(postid) {[weak self] results in
+        LibraryAPI.sharedLibraryAPI.storeWatchedPostActivity(postid) {[weak self] results in
             if self != nil {
                 switch results {
                 case .success(let result):
@@ -1186,7 +1228,7 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
     }
     
     func addPostToWatchList(postid: String) {
-        BBApiClient.sharedApiClient.addPostToWatchList(postid) {[weak self] results in
+        LibraryAPI.sharedLibraryAPI.addPostToWatchList(postid) {[weak self] results in
             if self != nil {
                 switch results {
                 case .success(let result):
@@ -1200,7 +1242,7 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
     }
     
     func removePostFromWatchList(postid: String) {
-        BBApiClient.sharedApiClient.removePostFromWatchList(postid) {[weak self] results in
+        LibraryAPI.sharedLibraryAPI.removePostFromWatchList(postid) {[weak self] results in
             if self != nil {
                 switch results {
                 case .success(let result):
@@ -1315,7 +1357,7 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
         }
         if let link = selectedVideo.youtubeLink {
             let thumbnailPath = "http://img.youtube.com/vi/\(link)/mqdefault.jpg"
-            cell.youtubeThumbnailView.sd_setImage(with: URL(string: thumbnailPath))
+            cell.youtubeThumbnailView.sd_setImage(with: URL(string: thumbnailPath), placeholderImage: nil, options: [.continueInBackground])
         }
         
         if let postTitle = selectedVideo.comment {
@@ -1374,8 +1416,6 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
     
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "outputVolume"{
-            print("got in here")
-            print("change ---> \(change)")
             guard let dict = change, let temp = dict[NSKeyValueChangeKey.newKey] as? Float else {return}
             volumeNumberOfItems = temp * Float((UIScreen.main.bounds.size.width / (UIScreen.main.bounds.size.width / 12)))
             collectionView.reloadData()
@@ -1462,15 +1502,16 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
                 self.center = CGPoint(x: self.center.x, y: self.center.y + translation.y)
                 sender.setTranslation(CGPoint.zero, in: self)
                 minimize()
-                self.tableView.alpha = 1
-                self.videoTitleLabel.alpha = 1
-                self.backgroundColor = UIColor.white
                 return
             } else {
                 //back to original point
                 self.center = CGPoint(x: UIScreen.main.bounds.size.width*0.5,y: UIScreen.main.bounds.size.height*0.5)
                 self.tableView.alpha = 1
                 self.videoTitleLabel.alpha = 1
+                self.bottomChangeVideoControls.alpha = 1
+                self.bottomBorderView.alpha = 1
+                self.shareView.alpha = 1
+                self.moreOptionsView.alpha = 1
                 self.backgroundColor = UIColor.white
             }
         } else if sender.state == UIGestureRecognizerState.changed {
@@ -1480,10 +1521,18 @@ class YoutubePlayView: BaseUIView, YTPlayerViewDelegate, UITableViewDelegate, UI
             } else if((self.center.y / 2) > self.currentMaxDragPoint.y) {
                 self.tableView.alpha -= 0.02
                 self.videoTitleLabel.alpha -= 0.02
+                self.bottomChangeVideoControls.alpha -= 0.02
+                self.bottomBorderView.alpha -= 0.02
+                self.shareView.alpha -= 0.02
+                self.moreOptionsView.alpha -= 0.02
                 self.backgroundColor = UIColor.white.withAlphaComponent(videoTitleLabel.alpha)
             } else {
                 self.tableView.alpha += 0.02
                 self.videoTitleLabel.alpha += 0.02
+                self.bottomChangeVideoControls.alpha += 0.02
+                self.bottomBorderView.alpha += 0.02
+                self.shareView.alpha += 0.02
+                self.moreOptionsView.alpha += 0.02
                 self.backgroundColor = UIColor.white.withAlphaComponent(videoTitleLabel.alpha)
             }
             self.currentMaxDragPoint = CGPoint(x: self.center.x, y: (self.center.y / 2))
