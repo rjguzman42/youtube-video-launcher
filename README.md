@@ -1,4 +1,6 @@
 # youtube-video-launcher
+![giphy](https://user-images.githubusercontent.com/35378117/40332105-ceda7a4c-5d20-11e8-9b6a-e7ba888d0de7.gif)
+
 
 # Usage
 This project is intended as an add-on to your existing project. It contains mostly UIView Swift files that are built entirely through code (not storyboard). The view will animate from a touchpoint (typically an image thumbnail) to fullscreen where the user is presented a custom view with video playback to control the YouTube iOS Player Helper. 
