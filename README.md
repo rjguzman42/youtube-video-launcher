@@ -43,14 +43,11 @@ Create the touchPoint inside the function connected to the tapGesture and pass a
 
 Retreive the tap by completing the closure function in another view/controller...make sure to avoid possible reference cycles by including a [weak self]:
 ```
-youtubeVideoLargeView.videoPressed = {[weak self] selectedVideos, touchPoint, thumbnailImage in
+youtubeVideoLargeView.videoPressed = {[weak self] selectedVideos, touchPoint, videoImageView, cell in
     if self != nil {
-        let rect = CGRect(x: (touchPoint.x), y: (touchPoint.y), width: 120, height: 120)
         let videoLauncher = VideoLauncher()
-        videoLauncher.originPoint = rect
-        videoLauncher.thumbnailImage = thumbnailImage
-        videoLauncher.posts = selectedVideos!
-        videoLauncher.showVideoPlayer()
+        videoLauncher.minusConstraint = 10
+        videoLauncher.setupData(selectedVideos, touchPoint, videoImageView, nil, cell, (self?.currentController)!, self?.localUser, "spotlight")
     }
 }
 ```
